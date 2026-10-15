@@ -1,4 +1,3 @@
-<img width="847" height="606" alt="Captura de pantalla 2026-10-15 160122" src="https://github.com/user-attachments/assets/79f3fa86-28e9-46b2-a4ea-b88ab148f546" /># Optimización del Rendimiento en Procesos de Biofabricación mediante Modelos Predictivos en Alta Dimensión
 
 ## Descripción
 Este proyecto se centra en la predicción y optimización del rendimiento (`Yield`) en un proceso de manufactura biofarmacéutica mediante técnicas avanzadas de Machine Learning. El reto principal abordado es la alta dimensionalidad de los datos ($p$ grande frente a $n$) y la multicolinealidad severa. Para aislar los factores críticos que maximizan la producción sin caer en problemas de sobreajuste, el estudio implementa, evalúa y contrasta técnicas de regularización (Lasso y Ridge) y métodos de reducción de dimensionalidad (PLSR y PCR). Los resultados revelan que la calidad del material biológico y ciertos parámetros de control son los verdaderos determinantes del proceso.
@@ -24,7 +23,8 @@ Para reproducir el análisis o ejecutar el código deducido del archivo `optimiz
 
 El modelo determinó que la combinación óptima de temperatura (36.5 °C) y tiempo de fermentación (48 h) incrementa el rendimiento (*yield*) en un 28%.
 
-![Superficie de respuesta para la optimización del rendimiento]![Uploading Captura de pantalla 2026-10-15 160122.png…].
+![Superficie de respuesta para la optimización del rendimiento]!<img width="847" height="606" alt="Captura de pantalla 2026-10-15 160122" src="https://github.com/user-attachments/assets/79f3fa86-28e9-46b2-a4ea-b88ab148f546" /># Optimización del Rendimiento en Procesos de Biofabricación mediante Modelos Predictivos en Alta Dimensión
+.
 
 > **Figura 1:** Optimización del rendimiento en función de la temperatura y el tiempo de proceso.
 ## Tecnologías y Dependencias
