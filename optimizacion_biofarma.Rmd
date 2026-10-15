@@ -1,0 +1,235 @@
+---
+title: "Optimización del Rendimiento en Procesos de Biofabricación mediante Modelos Predictivos en Alta Dimensión"
+output:
+  html_document: default
+  pdf_document: default
+date: "2025-12-27"
+---
+# Descripción General: 
+El presente proyecto se centra en la predicción y optimización del rendimiento (Yield) en un proceso de manufactura biofarmacéutica mediante técnicas avanzadas de Machine Learning en R. A través del análisis de un conjunto de datos altamente dimensional (características biológicas y variables de procesamiento), el estudio implementa, evalúa y contrasta técnicas de regularización y métodos de reducción de dimensionalidad para aislar los factores críticos que maximizan la producción. Este trabajo aporta un valor analítico fundamental para el escalado industrial y la toma de decisiones basada en datos.
+
+
+# Planteamiento del problema: 
+En la bioingeniería y la industria farmacéutica, uno de los mayores retos matemáticos y analíticos es la alta dimensionalidad de los datos ($p$ grande frente a $n$). En este caso de estudio, nos enfrentamos a un escenario de $n = 176$ observaciones y $p = 57$ predictores continuos, lo que desencadena problemas de multicolinealidad severa. Bajo estas condiciones, la varianza de los coeficientes estimados por Regresión Lineal Múltiple clásica (MCO) se infla, haciendo que los modelos estándar sean ineficaces y propensos al sobreajuste (overfitting). Por lo tanto, se requiere aplicar arquitecturas orientadas a la restricción del espacio de hipótesis y al tratamiento estructurado de matrices complejas.
+
+# Preparación de datos 
+### Diagnóstico y tratamiento de valores ausentes
+
+```{r, message=FALSE, warning=FALSE}
+library(glmnet)
+df=read.csv("C:\\Users\\USUARIO\\Downloads\\gcd23_act2_yield_phrama.csv")
+
+# Sacamos el numero de valores na que aparecen en el dataset y en caso de que aparezca alguno, insertaremos la media. 
+sum(is.na(df))
+# El valor es de 106 valores nulos, gran valor, por lo que insertaremos la media de la columna correspondiente a cada valor. 
+# 1. Aplicar la media a cada columna numérica del dataset
+for(i in 1:ncol(df)) {
+  df[is.na(df[,i]), i] <- mean(df[,i], na.rm = TRUE)
+}
+sum(is.na(df))
+```
+La exploración inicial detectó un total de 106 valores faltantes (`NA`) distribuidos entre las variables predictoras. Al tratarse de un número significativo que podría comprometer la estabilidad del modelado en alta dimensión (n = 176, p = 57), se procedió a una imputación mediante la media aritmética por columna. Esta estrategia conserva el tamaño muestral sin sesgar la tendencia central de las distribuciones. 
+
+
+
+### Partición estratificada y aleatoria en un conjunto de entrenamiento (Training Set: 70%, 123 observaciones) y un conjunto de prueba (Testing Set: 30%, 53 observaciones).
+
+```{r}
+# Nos aseguramos de que ninguna variable sea categorica para poder hacer la division  de entrenamiento y prueba de manera correcta. 
+str(df)
+
+# División del conjunto en entrenamiento y prueba. 
+set.seed(123) 
+
+# Calculamos el número de filas para el entrenamiento
+n_total <- nrow(df)
+n_train <- round(0.70 * n_total)
+
+indices_entrenamiento <- sample(1:n_total, size = n_train)
+train_set <- df[indices_entrenamiento, ]
+test_set  <- df[-indices_entrenamiento, ]
+
+# Preparar las matrices de entrenamiento
+# Suponiendo que la variable objetivo se llama "Yield"
+x_train <- as.matrix(train_set[, names(train_set) != "Yield"])
+y_train <- train_set$Yield
+
+# Preparar las matrices de prueba
+x_test <- as.matrix(test_set[, names(test_set) != "Yield"])
+y_test <- test_set$Yield
+
+nrow(train_set)
+nrow(test_set)
+
+```
+Se verificó la naturaleza estrictamente cuantitativa de los predictores para descartar variables categóricas que pudieran sesgar o dificultar el particionamiento; una vez validado este criterio, se procedió a la división de los conjuntos de entrenamiento y prueba.
+
+# Técnicas de Regularización: 
+## Lasso
+
+```{r}
+set.seed(123)
+cv_lasso <- cv.glmnet(x_train, y_train, alpha = 1) # alpha = 1 es Lasso
+plot(cv_lasso)
+
+coeficientes_finales <- coef(cv_lasso, s = "lambda.min")
+num_variables <- sum(coeficientes_finales != 0) - 1
+
+cat("El número de variables predictoras en el modelo final es:", num_variables)
+```
+Al analizar la curva de validación cruzada para el modelo Lasso se observa la evolución del error cuadrático medio (MSE) frente a λ. Entre los valores 2 y 4 de λ se localiza la región de mínimo error, mientras que a partir de 4 la penalización excesiva contrae los coeficientes y el error crece de manera severa Al seleccionar λ, la regularización L1 logra reducir la dimensionalidad de 57 a 31 variables predictoras activas, forzando los coeficientes de las 26 restantes exactamente a cero y aislando el ruido del proceso.
+
+
+
+## Ridge
+```{r}
+set.seed(123)
+cv_ridge <- cv.glmnet(x_train, y_train, alpha = 0)
+plot(cv_ridge, main = "Ridge: MSE vs Log(Lambda)")
+
+coef_ridge <- coef(cv_ridge, s = "lambda.min")
+vars_ridge <- sum(coef_ridge != 0) - 1
+cat("Variables finales en Ridge:", vars_ridge)
+```
+La regularización $L_2$ (Ridge) aplica una contracción asintótica sobre los coeficientes sin llegar a anularlos por completo. Por este motivo, el modelo final retiene la totalidad de los 57 predictores originales. La gráfica de validación cruzada evidencia que, aunque la penalización estabiliza los coeficientes frente a la severa multicolinealidad existente, no produce esparsidad , lo que limita su capacidad para simplificar el espacio de variables frente a métodos como Lasso.
+
+
+# Técnicas de Reducción de dimensionalidad: 
+## PLSR
+```{r}
+library(pls)
+set.seed(123)
+
+modelo_plsr <- plsr(Yield ~ ., data = train_set, scale = TRUE, validation = "CV")
+plot(RMSEP(modelo_plsr), main = "PLSR: RMSE vs Componentes")
+
+n_comp_optimo <- which.min(modelo_plsr$validation$PRESS)
+cat("El número óptimo de variables latentes es:", n_comp_optimo)
+```
+En el gráfico de evolución del RMSEP mediante validación cruzada (por defecto 10 particiones), se constata un descenso pronunciado del error durante las primeras dimensiones latentes. El mínimo absoluto del error de validación cruzada se alcanza con únicamente 4 componentes latentes. Este comportamiento subraya la fortaleza de PLSR como método supervisado: al maximizar simultáneamente la varianza explicada en los predictores y su covarianza con el rendimiento (`Yield`), comprime la información esencial de 57 variables en solo 4 ejes ortogonales.
+
+## PCR
+```{r}
+library(pls)
+set.seed(123)
+
+modelo_pcr <- pcr(Yield ~ ., data = train_set, scale = TRUE, validation = "CV")
+
+plot(RMSEP(modelo_pcr), main = "PCR: Error vs Componentes Principales")
+
+# Informar cuántas componentes aparecen en el modelo final
+n_comp_pcr_optimo <- which.min(modelo_pcr$validation$PRESS)
+
+cat("El número óptimo de componentes principales para el modelo final es:", n_comp_pcr_optimo)
+```
+A diferencia de PLSR, el perfil de RMSEP en PCR exhibe un comportamiento escalonado e irregular con múltiples fluctuaciones. Dado que la descomposición por PCA es no supervisada (captura la máxima varianza de X sin considerar la variable objetivo "Yield"), los primeros componentes no capturan de inmediato la señal asociada al rendimiento. En consecuencia, el modelo requiere retener 19 componentes principales para alcanzar su punto óptimo, demandando un subespacio de mayor complejidad dimensional frente a PLSR para modelar el proceso.
+
+# Resultados y comparativa de modelos: 
+```{r}
+# Función para calcular RMSE
+calc_rmse <- function(actual, predicted) {
+  sqrt(mean((actual - predicted)^2))
+}
+
+# Predicción y RMSE para LASSO
+pred_lasso <- predict(cv_lasso, s = "lambda.min", newx = x_test)
+rmse_lasso <- calc_rmse(y_test, pred_lasso)
+
+# Predicción y RMSE para RIDGE
+pred_ridge <- predict(cv_ridge, s = "lambda.min", newx = x_test)
+rmse_ridge <- calc_rmse(y_test, pred_ridge)
+
+# Predicción y RMSE para PLSR
+pred_plsr <- predict(modelo_plsr, newdata = test_set, ncomp = n_comp_optimo)
+rmse_plsr <- calc_rmse(y_test, pred_plsr)
+
+# Predicción y RMSE para PCR
+pred_pcr <- predict(modelo_pcr, newdata = test_set, ncomp = n_comp_pcr_optimo)
+rmse_pcr <- calc_rmse(y_test, pred_pcr)
+
+
+# Crear dataframe con los resultados
+resultados_comparativos <- data.frame(
+  Modelo = c("Lasso", "Ridge", "PLSR", "PCR"),
+  RMSE_Test = c(rmse_lasso, rmse_ridge, rmse_plsr, rmse_pcr)
+)
+
+# Mostrar la tabla ordenada de mejor a peor (menor RMSE es mejor)
+resultados_comparativos <- resultados_comparativos[order(resultados_comparativos$RMSE_Test), ]
+print(resultados_comparativos)
+```
+A pesar de retener una mayor cantidad de componentes (19 frente a 4 de PLSR), PCR ofrece la mayor capacidad predictiva global en este dataset. Por su parte, Lasso destaca como la opción más interpretable para la toma de decisiones al haber descartado 26 variables irrelevantes con un incremento de error muy moderado frente a PCR.
+
+
+# Análisis de Interpretabilidad y Proyección en el Espacio Latente (PCR vs. PLSR)
+## Análisis de Cargas (Loadings) y Factores Críticos del Proceso
+```{r}
+cargas_pcr <- modelo_pcr$loadings[, 1:2] # Miramos las 2 primeras componentes
+
+# Visualizar las variables con mayor peso en la Componente 1
+head(sort(abs(cargas_pcr[,1]), decreasing = TRUE), 10)
+```
+```{r}
+cargas_pls <- modelo_plsr$loadings[, 1:2]
+
+# Identificar los 10 predictores con mayor impacto absoluto en la Latente 1
+top_predictores_pls <- head(sort(abs(cargas_pls[,1]), decreasing = TRUE), 10)
+print(top_predictores_pls)
+```
+ El análisis de las cargas absolutas en la primera componente/dimensión revela una clara preponderancia de los factores biológicos en la determinación del rendimiento final: destacan variables como `BiologicalMaterial02`, `BiologicalMaterial04`, `BiologicalMaterial08`, `BiologicalMaterial06` y la variable de control de proceso `ManufacturingProcess29`. 
+ 
+ 
+## Visualización del Rendimiento (Yield) sobre las Componentes Principales y Variables Latentes.
+
+```{r}
+scores_pcr <- modelo_pcr$scores[, 1:2]
+
+# Crear un gráfico de dispersión coloreado por la respuesta (Yield)
+library(ggplot2)
+
+plot_data <- data.frame(
+  CP1 = scores_pcr[,1],
+  CP2 = scores_pcr[,2],
+  Rendimiento = train_set$Yield
+)
+
+ggplot(plot_data, aes(x = CP1, y = CP2, color = Rendimiento)) +
+  geom_point(size = 3, alpha = 0.8) +
+  scale_color_gradient(low = "blue", high = "red") +
+  labs(title = "Visualización del Yield sobre las 2 primeras CP",
+       x = "Componente Principal 1",
+       y = "Componente Principal 2",
+       color = "Yield (Rendimiento)") +
+  theme_minimal()
+```
+
+
+```{r}
+
+scores_pls <- modelo_plsr$scores[, 1:2]
+
+# Crear el dataframe para graficar
+df_plot_pls <- data.frame(
+  Latente1 = scores_pls[,1],
+  Latente2 = scores_pls[,2],
+  Rendimiento = train_set$Yield
+)
+
+# Gráfico con ggplot2
+library(ggplot2)
+ggplot(df_plot_pls, aes(x = Latente1, y = Latente2, color = Rendimiento)) +
+  geom_point(size = 3, alpha = 0.8) +
+  scale_color_gradient(low = "blue", high = "red") +
+  labs(title = "Visualización del Yield sobre las 2 primeras Variables Latentes (PLS)",
+       x = "Variable Latente 1",
+       y = "Variable Latente 2",
+       color = "Yield") +
+  theme_minimal()
+```
+
+ 
+En el plano bidimensional de puntuaciones (*Score Plot*), la proyección bajo PLSR muestra un gradiente de color del `Yield` notablemente más ordenado y homogéneo que el de PCR. Esto confirma que, conceptualmente, la proyección supervisada alinea los ejes latentes de forma directa con la optimización del producto biofarmacéutico.
+
+
+## 4.3
+Este estudio evidencia la eficacia de los métodos de regularización y reducción de dimensionalidad para abordar el desafío de la multicolinealidad y la alta dimensionalidad en la optimización del rendimiento biofarmacéutico (Yield). Mientras que el modelo PCR alcanzó la mayor capacidad predictiva global en el conjunto de prueba (RMSE = $1.430$ con 19 componentes), Lasso demostró ser la alternativa de mayor valor operativo al lograr una esparsidad efectiva (reduciendo el espacio a 31 predictores activos sin una pérdida crítica de precisión). Por su parte, la descomposición en variables latentes bajo PLSR ratificó conceptualmente la ventaja de los métodos supervisados para estructurar el espacio multivariante, revelando de forma coherente que la calidad intrínseca de los materiales biológicos (BiologicalMaterial02, 04, 06 y 08), junto con parámetros críticos de control como ManufacturingProcess29, constituyen los verdaderos factores determinantes del proceso. En conjunto, estos hallazgos proporcionan un marco analítico robusto que no solo optimiza la predicción del rendimiento, sino que guía de manera informada la toma de decisiones y el control de calidad en planta.
