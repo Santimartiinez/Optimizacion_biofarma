@@ -23,7 +23,7 @@ Para reproducir el análisis o ejecutar el código deducido del archivo `optimiz
 
 El modelo determinó que la combinación óptima de temperatura (36.5 °C) y tiempo de fermentación (48 h) incrementa el rendimiento (*yield*) en un 28%.
 
-![Superficie de respuesta para la optimización del rendimiento]!<img width="847" height="606" alt="Captura de pantalla 2026-10-15 160122" src="https://github.com/user-attachments/assets/480d91f1-e7f9-4e4b-adea-7879b181002a" />
+![Superficie de respuesta para la optimización del rendimiento]!<img width="500" height="606" alt="Captura de pantalla 2026-10-15 160122" src="https://github.com/user-attachments/assets/480d91f1-e7f9-4e4b-adea-7879b181002a" />
 
 .
 
