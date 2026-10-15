@@ -4,7 +4,7 @@
 El presente proyecto se centra en la predicción y optimización del rendimiento (*Yield*) en un proceso de manufactura biofarmacéutica empleando técnicas avanzadas de Machine Learning. El reto principal abordado es el escenario matemático de alta dimensionalidad ($p$ grande frente a $n$) típico en la bioingeniería, donde los datos presentan una multicolinealidad severa. Esto provoca que los modelos de Regresión Lineal Múltiple clásica (MCO) sufran de varianza inflada y sobreajuste. Para resolverlo, este estudio implementa arquitecturas de regularización (restricción del espacio de hipótesis) y reducción de dimensionalidad, contrastando su efectividad para aislar los factores críticos que maximizan la producción y aportando valor analítico para la toma de decisiones y el escalado industrial.
 
 ## Conjunto de Datos
-El estudio se realiza sobre un archivo de datos denominado `gcd23_act2_yield_phrama.csv`. 
+El estudio se realiza sobre un archivo de datos denominado `yield_phrama.csv`. 
 * **Dimensiones:** $n = 176$ observaciones y $p = 57$ variables predictoras continuas.
 * **Variable Objetivo:** `Yield` (Rendimiento del proceso biofarmacéutico).
 * **Características:** Las variables independientes engloban métricas altamente dimensionales, combinando características de los materiales biológicos (ej. `BiologicalMaterial02`, `04`, etc.) y variables de control de procesamiento (ej. `ManufacturingProcess29`).
