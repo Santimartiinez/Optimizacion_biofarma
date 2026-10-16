@@ -51,3 +51,24 @@ Este proyecto fue desarrollado en el entorno computacional estadístico **R**, u
 * **`pls`:** Para la generación y validación de los modelos de reducción de dimensionalidad (PLSR y PCR).
 * **`ggplot2`:** Empleada para el mapeo bidimensional y la creación de los gradientes visuales en el análisis de interpretabilidad del espacio latente.
 * **Base R:** Herramientas nativas para la lectura de datos (`read.csv`), manipulación de NA's, partición de tensores y cálculo de métricas de desempeño.
+
+## Reproducibilidad y Gestión de Dependencias
+Para garantizar que el código fuente de este proyecto se ejecute sin errores en el futuro y evitar la rotura del pipeline por actualizaciones de software, es fundamental replicar el entorno de desarrollo original. 
+
+### Especificaciones del Entorno
+* **Lenguaje:** R version 4.3.x (o superior)
+* **Entorno recomendado:** RStudio
+
+### Instalación Explícita de Librerías (Version Pinning)
+Si deseas ejecutar el script `.Rmd` de forma manual, asegúrate de instalar las versiones exactas de las librerías utilizadas. Puedes hacerlo ejecutando el siguiente bloque de código en tu consola de R, el cual utiliza el paquete `remotes` para forzar la instalación de las versiones correctas:
+
+```R
+# Instalar el gestor de versiones si no está disponible
+if (!requireNamespace("remotes", quietly = TRUE)) {
+  install.packages("remotes")
+}
+
+# Instalación de dependencias con versiones fijadas
+remotes::install_version("glmnet", version = "4.1-8", repos = "[http://cran.us.r-project.org](http://cran.us.r-project.org)")
+remotes::install_version("pls", version = "2.8-3", repos = "[http://cran.us.r-project.org](http://cran.us.r-project.org)")
+remotes::install_version("ggplot2", version = "3.4.4", repos = "[http://cran.us.r-project.org](http://cran.us.r-project.org)")
