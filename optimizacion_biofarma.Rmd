@@ -17,7 +17,7 @@ En la bioingeniería y la industria farmacéutica, uno de los mayores retos mate
 
 ```{r, message=FALSE, warning=FALSE}
 library(glmnet)
-df=read.csv("C:\\Users\\USUARIO\\Downloads\\gcd23_act2_yield_phrama.csv")
+df=read.csv("yield_phrama.csv")
 
 # Sacamos el numero de valores na que aparecen en el dataset y en caso de que aparezca alguno, insertaremos la media. 
 sum(is.na(df))
